@@ -26,6 +26,15 @@ async function getReviewedGames() {
 
 
 export default async function HomePage() {
+
+   // --- CÓDIGO TEMPORÁRIO PARA LIMPEZA ---
+  // Descomente as linhas abaixo, salve o arquivo e recarregue a página inicial UMA VEZ.
+  // Depois, comente ou apague as linhas novamente.
+  // await kv.del('games:reviewed');
+  // const allKeys = await kv.keys('reviews_for_game:*');
+  // if(allKeys.length > 0) await kv.del(...allKeys);
+  // ------------------------------------
+  
   const games = await getReviewedGames();
 
   return (

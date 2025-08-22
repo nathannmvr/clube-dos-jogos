@@ -1,8 +1,9 @@
 export interface GameReview {
-  id: string; // Um ID único para cada review
-  userId: string; // ID do usuário que fez a review
+  id: string;
+  userId: string; // ID do usuário do provedor de login
   userName: string; // Nome do usuário
-  userImage?: string; // Foto do usuário (do login social)
+  userImage?: string; // Imagem/Avatar do usuário
+
   gameTitle: string;
   createdAt: number; // Data em formato timestamp para ordenação
   

@@ -26,7 +26,8 @@ function ReviewCard({ review }: { review: GameReview }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
-        {Object.entries(review.scores).map(([key, value]) => (
+        {/* ADICIONE A VERIFICAÇÃO AQUI 👇 */}
+        {review.scores && Object.entries(review.scores).map(([key, value]) => (
           <div key={key} className="bg-slate-900/50 p-2 rounded-md">
             <p className="text-xs capitalize text-slate-300">{key.replace('trilhaSonora', 'Trilha')}</p>
             <p className="font-bold text-lg text-cyan-400">{value}/10</p>

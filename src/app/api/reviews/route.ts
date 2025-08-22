@@ -4,44 +4,55 @@ import { kv } from '@vercel/kv';
 import { NextRequest, NextResponse } from 'next/server';
 import { GameReview } from '@/lib/types';
 import { nanoid } from 'nanoid';
+import { getServerSession } from 'next-auth';
 
-// Função para criar um "slug" a partir do título do jogo
 const createSlug = (title: string) => {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-') // substitui caracteres não-alfanuméricos por hífens
-    .replace(/^-+|-+$/g, ''); // remove hífens do início e do fim
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 };
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession();
+
+  if (!session || !session.user) {
+    return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 });
+  }
+
   try {
     const reviewData = await request.json();
 
-    // Validação simples dos dados recebidos
-    if (!reviewData.userName || !reviewData.gameTitle || !reviewData.scores) {
+    if (!reviewData.gameTitle || !reviewData.scores) {
       return NextResponse.json({ success: false, error: 'Dados incompletos' }, { status: 400 });
     }
     
     const gameSlug = createSlug(reviewData.gameTitle);
 
+    // Objeto a ser salvo no banco de dados
     const newReview: GameReview = {
       id: nanoid(),
       createdAt: Date.now(),
-      userName: reviewData.userName,
+      
+      // Dados do usuário (da sessão)
+      userId: session.user.id,
+      userName: session.user.name || 'Usuário Anônimo',
+      userImage: session.user.image || undefined,
+      
+      // Dados do jogo (do formulário)
       gameTitle: reviewData.gameTitle,
       gameSlug: gameSlug,
+      
+      // --- ESTAS ERAM AS LINHAS FALTANTES ---
       scores: reviewData.scores,
       horasJogadas: reviewData.horasJogadas,
       notaFinal: reviewData.notaFinal,
+      // ------------------------------------
     };
 
-    // Salva a review individualmente
+    // Salva o objeto COMPLETO no KV
     await kv.set(`review:${newReview.id}`, newReview);
-
-    // Adiciona o ID da review na lista de reviews daquele jogo
     await kv.lpush(`reviews_for_game:${gameSlug}`, newReview.id);
-    
-    // Adiciona o jogo a um set para sabermos quais jogos já foram avaliados (não permite duplicatas)
     await kv.sadd('games:reviewed', gameSlug);
 
     return NextResponse.json({ success: true, review: newReview });
