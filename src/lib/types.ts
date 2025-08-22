@@ -1,11 +1,15 @@
+// src/lib/types.ts
+
 export interface GameReview {
   id: string;
-  userId: string; // ID do usuário do provedor de login
-  userName: string; // Nome do usuário
-  userImage?: string; // Imagem/Avatar do usuário
+  userId: string;
+  userName: string;
+  userImage?: string;
 
   gameTitle: string;
-  createdAt: number; // Data em formato timestamp para ordenação
+  gameSlug: string; // <-- ADICIONE ESTA LINHA
+
+  createdAt: number; 
   
   scores: {
     jogabilidade: number;
@@ -20,5 +24,4 @@ export interface GameReview {
 
   horasJogadas: number;
   notaFinal: number;
-  comentario?: string; // Um campo extra para texto livre
 }
