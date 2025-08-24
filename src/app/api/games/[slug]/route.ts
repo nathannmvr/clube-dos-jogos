@@ -7,7 +7,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import { Game, GameReview } from '@/lib/types';
 
 // --- ATUALIZAR UM JOGO (EDITAR TÍTULO) ---
-export async function PUT(request: NextRequest, context: { params: { slug: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
 
@@ -21,8 +21,8 @@ export async function PUT(request: NextRequest, context: { params: { slug: strin
       return NextResponse.json({ success: false, error: 'Título em falta.' }, { status: 400 });
     }
     
-    // Aceda ao slug através do objeto de contexto
-    const { slug } = context.params;
+    // Use the destructured 'slug' from params
+    const { slug } = params;
     const gameKey = `game:${slug}`;
     const game = await kv.get<Game>(gameKey);
 
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest, context: { params: { slug: strin
 }
 
 // --- APAGAR UM JOGO ---
-export async function DELETE(request: NextRequest, context: { params: { slug: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { slug: string } }) {
   const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
 
@@ -59,8 +59,8 @@ export async function DELETE(request: NextRequest, context: { params: { slug: st
   }
 
   try {
-    // Aceda ao slug através do objeto de contexto
-    const { slug } = context.params;
+    // Use the destructured 'slug' from params
+    const { slug } = params;
 
     const reviewIds = await kv.lrange<string>(`reviews_for_game:${slug}`, 0, -1);
 
