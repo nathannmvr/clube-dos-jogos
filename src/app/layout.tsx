@@ -26,7 +26,7 @@ export default async function RootLayout({
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
   const isAdmin = session?.user?.email ? adminEmails.includes(session.user.email) : false;
 
-  return (
+   return (
     <html lang="pt-BR">
       <body className={`${inter.className} bg-slate-900 text-white`}>
         <NextAuthProvider>
@@ -36,9 +36,9 @@ export default async function RootLayout({
                 Clube de Jogos
               </Link>
               <div className="flex items-center gap-4">
-                {/* O link de Admin só aparece para administradores */}
                 {isAdmin && (
-                  <Link href="/admin/add-game" className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-md">
+                  // ALTERE ESTE LINK para a nova página
+                  <Link href="/admin/manage-games" className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-md">
                     Admin
                   </Link>
                 )}
