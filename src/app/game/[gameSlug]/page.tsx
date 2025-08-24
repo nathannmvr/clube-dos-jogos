@@ -2,7 +2,7 @@
 
 import { kv } from '@vercel/kv';
 import { Game, GameReview } from '@/lib/types';
-import { Clock, Star, User, PlusCircle, Edit } from 'lucide-react';
+import { Clock, Star, User, PlusCircle, Edit, Award } from 'lucide-react'; // Adicione o ícone Award
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
@@ -83,13 +83,39 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
   const gameTitle = game.title;
   const userReview = reviews.find(review => review.userId === currentUserId);
 
+  // --- LÓGICA PARA CALCULAR A PONTUAÇÃO GERAL ---
+  let averageScore: string | null = null;
+  if (reviews.length > 0) {
+    const totalScore = reviews.reduce((sum, review) => sum + review.notaFinal, 0);
+    averageScore = (totalScore / reviews.length).toFixed(1); // Arredonda para 1 casa decimal
+  }
+  // ------------------------------------------------
+
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold">{gameTitle}</h1>
+        <h1 className="text-4xl lg:text-5xl font-bold">{gameTitle}</h1>
+
+        {/* --- NOVO COMPONENTE DE PONTUAÇÃO GERAL --- */}
+        <div className="mt-4 flex justify-center items-center">
+          {averageScore ? (
+            <div className="flex items-center gap-3 bg-amber-500/10 text-amber-300 px-4 py-2 rounded-full">
+              <Award size={28} />
+              <div>
+                <span className="font-bold text-2xl">{averageScore}</span>
+                <span className="text-sm"> / 10</span>
+                <p className="text-xs text-amber-400/70">Pontuação Geral ({reviews.length} {reviews.length > 1 ? 'avaliações' : 'avaliação'})</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-400 mt-2">Este jogo ainda não tem uma pontuação geral.</p>
+          )}
+        </div>
+        {/* ------------------------------------------- */}
+
       </div>
 
-      {/* --- BOTÃO CONDICIONAL --- */}
+      {/* --- BOTÃO CONDICIONAL (continua igual) --- */}
       {session?.user && (
         <div className="flex justify-center">
           {!userReview ? (
@@ -114,9 +140,8 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
           )}
         </div>
       )}
-      {/* --- FIM DO BOTÃO CONDICIONAL --- */}
       
-      {/* A LISTA DE REVIEWS AGORA É RENDERIZADA SEMPRE, FORA DA CONDIÇÃO ACIMA */}
+      {/* A LISTA DE REVIEWS (continua igual) */}
       <div className="space-y-6">
         {reviews.length > 0 ? (
           reviews.map(review => (
