@@ -6,8 +6,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { Game, GameReview } from '@/lib/types';
 
+// Assinatura de tipo que corresponde ao que o erro pede
+type RouteContext = {
+  params: Promise<{ slug: string }>
+}
+
 // --- ATUALIZAR UM JOGO (EDITAR TÍTULO) ---
-export async function PUT(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
   const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
 
@@ -21,8 +26,8 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
       return NextResponse.json({ success: false, error: 'Título em falta.' }, { status: 400 });
     }
     
-    // Use the destructured 'slug' from params
-    const { slug } = params;
+    // Agora esperamos (await) que a Promise dos 'params' seja resolvida
+    const { slug } = await context.params;
     const gameKey = `game:${slug}`;
     const game = await kv.get<Game>(gameKey);
 
@@ -50,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
 }
 
 // --- APAGAR UM JOGO ---
-export async function DELETE(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
 
@@ -59,8 +64,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
   }
 
   try {
-    // Use the destructured 'slug' from params
-    const { slug } = params;
+    const { slug } = await context.params;
 
     const reviewIds = await kv.lrange<string>(`reviews_for_game:${slug}`, 0, -1);
 
