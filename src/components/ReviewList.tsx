@@ -4,7 +4,8 @@
 import { useState } from 'react';
 import { GameReview } from '@/lib/types';
 import Link from 'next/link';
-import { Clock, Star, User, Edit, Trash2 } from 'lucide-react';
+import Image from 'next/image'; // 1. Importe o componente Image
+import { Clock, Star, Edit, Trash2 } from 'lucide-react'; // 2. O ícone 'User' foi removido
 import { useRouter } from 'next/navigation';
 
 function ReviewCard({ review, currentUserId, onDelete }: { review: GameReview, currentUserId?: string, onDelete: (reviewId: string) => void }) {
@@ -20,7 +21,16 @@ function ReviewCard({ review, currentUserId, onDelete }: { review: GameReview, c
     <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          {review.userImage && <img src={review.userImage} alt={review.userName} className="w-8 h-8 rounded-full" />}
+          {review.userImage && (
+            // 3. A tag <img> foi substituída pelo componente Image
+            <Image
+              src={review.userImage}
+              alt={review.userName}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full"
+            />
+          )}
           <p className="font-bold text-lg">{review.userName}</p>
         </div>
         <div className="flex items-center gap-4">
