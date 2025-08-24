@@ -5,6 +5,8 @@ import { GameReview } from '@/lib/types';
 import { Clock, Star, User, PlusCircle } from 'lucide-react'; // Adicione PlusCircle
 import Link from 'next/link'; // Importe Link
 
+export const dynamic = 'force-dynamic';
+
 async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
   const reviewIds = await kv.lrange(`reviews_for_game:${gameSlug}`, 0, -1);
   if (!reviewIds || reviewIds.length === 0) {
