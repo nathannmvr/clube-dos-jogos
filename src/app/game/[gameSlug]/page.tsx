@@ -1,12 +1,16 @@
 // src/app/game/[gameSlug]/page.tsx
 
 import { kv } from '@vercel/kv';
-import { GameReview } from '@/lib/types';
-import { Clock, Star, User, PlusCircle } from 'lucide-react'; // Adicione PlusCircle
-import Link from 'next/link'; // Importe Link
+// Importe o tipo 'Game' junto com 'GameReview'
+import { Game, GameReview } from '@/lib/types';
+import { Clock, Star, User, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+// Importe a função 'notFound' para lidar com jogos que não existem
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
+// A função que busca as reviews (continua igual)
 async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
   const reviewIds = await kv.lrange(`reviews_for_game:${gameSlug}`, 0, -1);
   if (!reviewIds || reviewIds.length === 0) {
@@ -16,8 +20,15 @@ async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
   return reviews.filter((review): review is GameReview => review !== null);
 }
 
-// Componente para exibir um único card de review
+// NOVA função que busca os detalhes principais do jogo
+async function getGameDetails(gameSlug: string): Promise<Game | null> {
+  // Busca o objeto do jogo diretamente pela chave 'game:[slug]'
+  return await kv.get<Game>(`game:${gameSlug}`);
+}
+
+// O componente ReviewCard (continua igual)
 function ReviewCard({ review }: { review: GameReview }) {
+  // ... (nenhuma mudança aqui)
   return (
     <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
       <div className="flex items-center justify-between mb-4">
@@ -29,7 +40,6 @@ function ReviewCard({ review }: { review: GameReview }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
-        {/* ADICIONE A VERIFICAÇÃO AQUI 👇 */}
         {review.scores && Object.entries(review.scores).map(([key, value]) => (
           <div key={key} className="bg-slate-900/50 p-2 rounded-md">
             <p className="text-xs capitalize text-slate-300">{key.replace('trilhaSonora', 'Trilha')}</p>
@@ -53,10 +63,21 @@ function ReviewCard({ review }: { review: GameReview }) {
 }
 
 
+// O componente da página principal (MODIFICADO)
 export default async function GamePage({ params }: { params: { gameSlug: string } }) {
-  const reviews = await getReviewsForGame(params.gameSlug);
-  // ... (verificação se o jogo não foi encontrado) ...
-  const gameTitle = reviews.length > 0 ? reviews[0].gameTitle : decodeURIComponent(params.gameSlug);
+  // Busca os dados do jogo e as reviews em paralelo para melhor performance
+  const [game, reviews] = await Promise.all([
+    getGameDetails(params.gameSlug),
+    getReviewsForGame(params.gameSlug),
+  ]);
+
+  // Se o jogo não for encontrado no banco de dados, exibe uma página 404
+  if (!game) {
+    notFound();
+  }
+
+  // Agora, o título vem sempre da fonte correta (o objeto 'game')
+  const gameTitle = game.title;
 
   return (
     <div className="space-y-8">
@@ -64,7 +85,6 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
         <h1 className="text-4xl font-bold">{gameTitle}</h1>
       </div>
 
-      {/* Botão para Adicionar Review */}
       <div className="flex justify-center">
         <Link 
           href={`/game/${params.gameSlug}/submit-review`}
@@ -74,20 +94,16 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
           Adicionar sua Review
         </Link>
       </div>
-
+      
       <div className="space-y-6">
-        {reviews.map(review => (
-          <ReviewCard key={review.id} review={review} />
-        ))}
+        {reviews.length > 0 ? (
+          reviews.map(review => (
+            <ReviewCard key={review.id} review={review} />
+          ))
+        ) : (
+          <p className="text-center text-slate-400 bg-slate-800 p-6 rounded-lg">Ainda não há nenhuma review para este jogo. Seja o primeiro!</p>
+        )}
       </div>
     </div>
   );
-}
-
-// Opcional: Melhora o desempenho em produção
-export async function generateStaticParams() {
-    const gameSlugs = await kv.smembers('games:reviewed');
-    return gameSlugs.map((gameSlug) => ({
-      gameSlug,
-    }));
 }
