@@ -26,12 +26,15 @@ export default function EditGameForm({ game }: { game: Game }) {
     
     if (response.ok) {
       setMessage({ type: 'success', text: result.message });
-      router.push('/admin/manage-games'); // Redireciona de volta para a lista
-      router.refresh();
+      // Atraso para o utilizador ver a mensagem de sucesso antes de ser redirecionado
+      setTimeout(() => {
+        router.push('/admin/manage-games');
+        router.refresh();
+      }, 1500);
     } else {
       setMessage({ type: 'error', text: result.error || 'Ocorreu um erro.' });
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

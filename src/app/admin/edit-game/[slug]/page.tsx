@@ -1,96 +1,46 @@
-// src/app/game/[gameSlug]/page.tsx
+// src/app/admin/edit-game/[slug]/page.tsx
 
 import { kv } from '@vercel/kv';
-import { Game, GameReview } from '@/lib/types';
-import { PlusCircle, Edit, Award } from 'lucide-react';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { Game } from '@/lib/types';
 import { getServerSession } from 'next-auth';
+import { notFound, redirect } from 'next/navigation';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import ReviewList from '@/components/ReviewList';
+import EditGameForm from '@/components/EditGameForm';
 
-export const dynamic = 'force-dynamic';
+async function getGame(slug: string): Promise<Game | null> {
+  return await kv.get<Game>(`game:${slug}`);
+}
 
-async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
-  const reviewIds = await kv.lrange(`reviews_for_game:${gameSlug}`, 0, -1);
-  if (!reviewIds || reviewIds.length === 0) {
-    return [];
+export default async function EditGamePage({ params }: { params: { slug: string } }) {
+  // --- LOGS PARA DEPURAÇÃO ---
+  // Estes logs irão aparecer no seu terminal (onde corre o 'npm run dev')
+  console.log("\n--- A ACEDER À PÁGINA DE EDIÇÃO DE JOGO ---");
+  console.log("PARAMS RECEBIDOS PELA URL:", params);
+  console.log("SLUG A SER PROCURADO NA BASE DE DADOS:", params.slug);
+  // -------------------------
+
+  const session = await getServerSession(authOptions);
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+
+  if (!session?.user?.email || !adminEmails.includes(session.user.email)) {
+    redirect('/');
   }
-  const reviews = await kv.mget<GameReview[]>(...reviewIds.map(id => `review:${id}`));
-  return reviews.filter((review): review is GameReview => review !== null).sort((a, b) => b.createdAt - a.createdAt);
-}
 
-async function getGameDetails(gameSlug: string): Promise<Game | null> {
-  return await kv.get<Game>(`game:${gameSlug}`);
-}
+  const game = await getGame(params.slug);
 
-export default async function GamePage({ params }: { params: { gameSlug: string } }) {
-  const [session, game, reviews] = await Promise.all([
-    getServerSession(authOptions),
-    getGameDetails(params.gameSlug),
-    getReviewsForGame(params.gameSlug),
-  ]);
+  // --- LOGS PARA DEPURAÇÃO ---
+  console.log("RESULTADO DA BUSCA PELO JOGO NA BASE DE DADOS:", game);
+  // -------------------------
 
   if (!game) {
+    console.error("ERRO: Jogo não encontrado! A gerar página 404.");
     notFound();
-  }
-  
-  const currentUserId = session?.user?.id;
-  const gameTitle = game.title;
-  const userReview = reviews.find(review => review.userId === currentUserId);
-
-  let averageScore: string | null = null;
-  if (reviews.length > 0) {
-    const totalScore = reviews.reduce((sum, review) => sum + review.notaFinal, 0);
-    averageScore = (totalScore / reviews.length).toFixed(1);
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-4xl lg:text-5xl font-bold">{gameTitle}</h1>
-        <div className="mt-4 flex justify-center items-center">
-          {averageScore ? (
-            <div className="flex items-center gap-3 bg-amber-500/10 text-amber-300 px-4 py-2 rounded-full">
-              <Award size={28} />
-              <div>
-                <span className="font-bold text-2xl">{averageScore}</span>
-                <span className="text-sm"> / 10</span>
-                <p className="text-xs text-amber-400/70">Pontuação Geral ({reviews.length} {reviews.length > 1 ? 'avaliações' : 'avaliação'})</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-slate-400 mt-2">Este jogo ainda não tem uma pontuação geral.</p>
-          )}
-        </div>
-      </div>
-
-      {session?.user && (
-        <div className="flex justify-center">
-          {!userReview ? (
-            <Link 
-              href={`/game/${params.gameSlug}/submit-review`}
-              className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-md transition-colors text-lg"
-            >
-              <PlusCircle size={24} />
-              Adicionar sua Review
-            </Link>
-          ) : (
-            <div className="text-center bg-slate-800 border border-slate-700 p-4 rounded-lg">
-              <p className="text-slate-300 mb-2">Você já avaliou este jogo.</p>
-              <Link 
-                href={`/review/${userReview.id}/edit`}
-                className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-bold"
-              >
-                <Edit size={16} />
-                Editar minha Review
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-      
-      <ReviewList initialReviews={reviews} currentUserId={currentUserId} />
+    <div className="max-w-xl mx-auto">
+      <h1 className="text-4xl font-bold mb-8">Editar Jogo</h1>
+      <EditGameForm game={game} />
     </div>
   );
 }
