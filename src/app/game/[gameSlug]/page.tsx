@@ -1,45 +1,49 @@
 // src/app/game/[gameSlug]/page.tsx
 
 import { kv } from '@vercel/kv';
-// Importe o tipo 'Game' junto com 'GameReview'
 import { Game, GameReview } from '@/lib/types';
-import { Clock, Star, User, PlusCircle } from 'lucide-react';
+import { Clock, Star, User, PlusCircle, Edit } from 'lucide-react';
 import Link from 'next/link';
-// Importe a função 'notFound' para lidar com jogos que não existem
 import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
 
 export const dynamic = 'force-dynamic';
 
-// A função que busca as reviews (continua igual)
 async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
   const reviewIds = await kv.lrange(`reviews_for_game:${gameSlug}`, 0, -1);
   if (!reviewIds || reviewIds.length === 0) {
     return [];
   }
   const reviews = await kv.mget<GameReview[]>(...reviewIds.map(id => `review:${id}`));
-  return reviews.filter((review): review is GameReview => review !== null);
+  return reviews.filter((review): review is GameReview => review !== null).sort((a, b) => b.createdAt - a.createdAt);
 }
 
-// NOVA função que busca os detalhes principais do jogo
 async function getGameDetails(gameSlug: string): Promise<Game | null> {
-  // Busca o objeto do jogo diretamente pela chave 'game:[slug]'
   return await kv.get<Game>(`game:${gameSlug}`);
 }
 
-// O componente ReviewCard (continua igual)
-function ReviewCard({ review }: { review: GameReview }) {
-  // ... (nenhuma mudança aqui)
+function ReviewCard({ review, currentUserId }: { review: GameReview, currentUserId?: string }) {
+  const isOwner = review.userId === currentUserId;
+
   return (
     <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <User className="w-5 h-5 text-cyan-400" />
+          {review.userImage && <img src={review.userImage} alt={review.userName} className="w-8 h-8 rounded-full" />}
           <p className="font-bold text-lg">{review.userName}</p>
         </div>
-        <p className="text-sm text-slate-400">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-slate-400">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</p>
+          {isOwner && (
+            <Link href={`/review/${review.id}/edit`} className="flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition-colors">
+              <Edit size={16} />
+              Editar
+            </Link>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6 text-center">
         {review.scores && Object.entries(review.scores).map(([key, value]) => (
           <div key={key} className="bg-slate-900/50 p-2 rounded-md">
             <p className="text-xs capitalize text-slate-300">{key.replace('trilhaSonora', 'Trilha')}</p>
@@ -62,21 +66,18 @@ function ReviewCard({ review }: { review: GameReview }) {
   );
 }
 
-
-// O componente da página principal (MODIFICADO)
 export default async function GamePage({ params }: { params: { gameSlug: string } }) {
-  // Busca os dados do jogo e as reviews em paralelo para melhor performance
-  const [game, reviews] = await Promise.all([
+  const [session, game, reviews] = await Promise.all([
+    getServerSession(),
     getGameDetails(params.gameSlug),
     getReviewsForGame(params.gameSlug),
   ]);
 
-  // Se o jogo não for encontrado no banco de dados, exibe uma página 404
   if (!game) {
     notFound();
   }
-
-  // Agora, o título vem sempre da fonte correta (o objeto 'game')
+  
+  const currentUserId = session?.user?.id;
   const gameTitle = game.title;
 
   return (
@@ -98,7 +99,7 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
       <div className="space-y-6">
         {reviews.length > 0 ? (
           reviews.map(review => (
-            <ReviewCard key={review.id} review={review} />
+            <ReviewCard key={review.id} review={review} currentUserId={currentUserId} />
           ))
         ) : (
           <p className="text-center text-slate-400 bg-slate-800 p-6 rounded-lg">Ainda não há nenhuma review para este jogo. Seja o primeiro!</p>

@@ -7,6 +7,8 @@ import "./globals.css";
 import { NextAuthProvider } from "./providers";
 import AuthButtons from "@/components/AuthButtons";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +22,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
   const isAdmin = session?.user?.email ? adminEmails.includes(session.user.email) : false;
 
