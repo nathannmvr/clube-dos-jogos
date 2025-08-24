@@ -1,7 +1,7 @@
 // src/app/review/[reviewId]/edit/page.tsx
 
 import { kv } from '@vercel/kv';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation'; // Removido o 'notFound'
 import { GameReview } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm';
 import { getServerSession } from 'next-auth';
