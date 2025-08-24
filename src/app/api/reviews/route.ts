@@ -9,28 +9,33 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // --- CRIAR NOVA REVIEW ---
 export async function POST(request: NextRequest) {
-  console.log("\n--- INICIANDO CRIAÇÃO DE REVIEW ---");
   try {
     const session = await getServerSession(authOptions);
 
-    // Log mais seguro para o objeto da sessão
-    if (session && session.user) {
-      console.log(`Sessão encontrada para o utilizador: ${session.user.name}`);
-      console.log(`ID do utilizador na sessão: ${session.user.id}`);
-    } else {
-      console.log("Nenhuma sessão de utilizador foi encontrada.");
-    }
-    
     if (!session || !session.user || !session.user.id) {
-      console.error("FALHA DE SEGURANÇA: Acesso negado. A sessão ou o ID do utilizador estão em falta.");
-      return NextResponse.json({ success: false, error: 'Não autorizado ou ID do utilizador em falta na sessão.' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Não autorizado ou ID de utilizador em falta na sessão.' }, { status: 401 });
     }
     
     const userId = session.user.id;
     const reviewData = await request.json();
     
-    // ... (validação de reviewData) ...
+    if (!reviewData.gameTitle || !reviewData.gameSlug || !reviewData.scores) {
+      return NextResponse.json({ success: false, error: 'Dados incompletos' }, { status: 400 });
+    }
     
+    const gameSlug = reviewData.gameSlug;
+
+    // --- VERIFICAÇÃO DE DUPLICIDADE ADICIONADA AQUI ---
+    // Vamos criar uma chave única para a combinação utilizador + jogo
+    const reviewExistsKey = `user:${userId}:game:${gameSlug}`;
+    const existingReview = await kv.exists(reviewExistsKey);
+
+    if (existingReview) {
+      // Retorna um erro 409 Conflict, que é o código HTTP correto para esta situação
+      return NextResponse.json({ success: false, error: 'Você já publicou uma review para este jogo.' }, { status: 409 });
+    }
+    // --------------------------------------------------
+
     const newReview: GameReview = {
       id: nanoid(),
       createdAt: Date.now(),
@@ -38,25 +43,24 @@ export async function POST(request: NextRequest) {
       userName: session.user.name || 'Anônimo',
       userImage: session.user.image || undefined,
       gameTitle: reviewData.gameTitle,
-      gameSlug: reviewData.gameSlug,
+      gameSlug: gameSlug,
       scores: reviewData.scores,
       horasJogadas: reviewData.horasJogadas,
       notaFinal: reviewData.notaFinal,
     };
 
-    console.log(`A criar review para o jogo '${newReview.gameTitle}' pelo utilizador com ID: ${userId}`);
-    
+    // Salva a review e todos os índices
     await kv.set(`review:${newReview.id}`, newReview);
-    await kv.lpush(`reviews_for_game:${newReview.gameSlug}`, newReview.id);
-    await kv.sadd('games:reviewed', newReview.gameSlug);
+    await kv.lpush(`reviews_for_game:${gameSlug}`, newReview.id);
+    await kv.sadd('games:reviewed', gameSlug);
     await kv.sadd(`user:${userId}:reviews`, newReview.id);
-    
-    console.log(`SUCESSO: Review ${newReview.id} salva e indexada.`);
-    console.log("--- FIM DA CRIAÇÃO DE REVIEW ---");
+    // --- NOVO ÍNDICE PARA A VERIFICAÇÃO DE DUPLICIDADE ---
+    await kv.set(reviewExistsKey, newReview.id);
+    // ----------------------------------------------------
 
     return NextResponse.json({ success: true, review: newReview });
   } catch (error) {
-    console.error("ERRO INESPERADO:", error);
+    console.error("ERRO INESPERADO NA FUNÇÃO POST:", error);
     return NextResponse.json({ success: false, error: 'Falha interna do servidor.' }, { status: 500 });
   }
 }

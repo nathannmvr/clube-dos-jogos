@@ -6,6 +6,7 @@ import { Clock, Star, User, PlusCircle, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,9 +67,10 @@ function ReviewCard({ review, currentUserId }: { review: GameReview, currentUser
   );
 }
 
+
 export default async function GamePage({ params }: { params: { gameSlug: string } }) {
   const [session, game, reviews] = await Promise.all([
-    getServerSession(),
+    getServerSession(authOptions),
     getGameDetails(params.gameSlug),
     getReviewsForGame(params.gameSlug),
   ]);
@@ -79,6 +81,7 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
   
   const currentUserId = session?.user?.id;
   const gameTitle = game.title;
+  const userReview = reviews.find(review => review.userId === currentUserId);
 
   return (
     <div className="space-y-8">
@@ -86,16 +89,34 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
         <h1 className="text-4xl font-bold">{gameTitle}</h1>
       </div>
 
-      <div className="flex justify-center">
-        <Link 
-          href={`/game/${params.gameSlug}/submit-review`}
-          className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-md transition-colors text-lg"
-        >
-          <PlusCircle size={24} />
-          Adicionar sua Review
-        </Link>
-      </div>
+      {/* --- BOTÃO CONDICIONAL --- */}
+      {session?.user && (
+        <div className="flex justify-center">
+          {!userReview ? (
+            <Link 
+              href={`/game/${params.gameSlug}/submit-review`}
+              className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-md transition-colors text-lg"
+            >
+              <PlusCircle size={24} />
+              Adicionar sua Review
+            </Link>
+          ) : (
+            <div className="text-center bg-slate-800 border border-slate-700 p-4 rounded-lg">
+              <p className="text-slate-300 mb-2">Você já avaliou este jogo.</p>
+              <Link 
+                href={`/review/${userReview.id}/edit`}
+                className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-bold"
+              >
+                <Edit size={16} />
+                Editar minha Review
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+      {/* --- FIM DO BOTÃO CONDICIONAL --- */}
       
+      {/* A LISTA DE REVIEWS AGORA É RENDERIZADA SEMPRE, FORA DA CONDIÇÃO ACIMA */}
       <div className="space-y-6">
         {reviews.length > 0 ? (
           reviews.map(review => (
