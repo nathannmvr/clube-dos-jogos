@@ -15,6 +15,7 @@ const createSlug = (title: string) => {
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession();
+  // ... (verificação de sessão continua igual)
 
   if (!session || !session.user) {
     return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 });
@@ -23,36 +24,32 @@ export async function POST(request: NextRequest) {
   try {
     const reviewData = await request.json();
 
-    if (!reviewData.gameTitle || !reviewData.scores) {
+    // Validação
+    if (!reviewData.gameTitle || !reviewData.gameSlug || !reviewData.scores) {
       return NextResponse.json({ success: false, error: 'Dados incompletos' }, { status: 400 });
     }
-    
-    const gameSlug = createSlug(reviewData.gameTitle);
 
-    // Objeto a ser salvo no banco de dados
+    // Usa o gameSlug recebido do formulário
+    const gameSlug = reviewData.gameSlug;
+
     const newReview: GameReview = {
       id: nanoid(),
       createdAt: Date.now(),
-      
-      // Dados do usuário (da sessão)
       userId: session.user.id,
-      userName: session.user.name || 'Usuário Anônimo',
+      userName: session.user.name || 'Anônimo',
       userImage: session.user.image || undefined,
-      
-      // Dados do jogo (do formulário)
       gameTitle: reviewData.gameTitle,
-      gameSlug: gameSlug,
-      
-      // --- ESTAS ERAM AS LINHAS FALTANTES ---
+      gameSlug: gameSlug, // Usa o slug recebido
       scores: reviewData.scores,
       horasJogadas: reviewData.horasJogadas,
       notaFinal: reviewData.notaFinal,
-      // ------------------------------------
     };
 
-    // Salva o objeto COMPLETO no KV
+    // Salva a review
     await kv.set(`review:${newReview.id}`, newReview);
+    // Adiciona o ID à lista de reviews do jogo
     await kv.lpush(`reviews_for_game:${gameSlug}`, newReview.id);
+    // Adiciona o jogo ao set de jogos com review
     await kv.sadd('games:reviewed', gameSlug);
 
     return NextResponse.json({ success: true, review: newReview });

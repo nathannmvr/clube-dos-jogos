@@ -2,7 +2,8 @@
 
 import { kv } from '@vercel/kv';
 import { GameReview } from '@/lib/types';
-import { Clock, Star, User } from 'lucide-react';
+import { Clock, Star, User, PlusCircle } from 'lucide-react'; // Adicione PlusCircle
+import Link from 'next/link'; // Importe Link
 
 async function getReviewsForGame(gameSlug: string): Promise<GameReview[]> {
   const reviewIds = await kv.lrange(`reviews_for_game:${gameSlug}`, 0, -1);
@@ -52,21 +53,26 @@ function ReviewCard({ review }: { review: GameReview }) {
 
 export default async function GamePage({ params }: { params: { gameSlug: string } }) {
   const reviews = await getReviewsForGame(params.gameSlug);
-
-  if (reviews.length === 0) {
-    return (
-      <div className="text-center">
-        <h1 className="text-4xl font-bold">Jogo não encontrado</h1>
-        <p className="text-slate-400 mt-4">Nenhuma review foi encontrada para este jogo.</p>
-      </div>
-    );
-  }
-
-  const gameTitle = reviews[0].gameTitle;
+  // ... (verificação se o jogo não foi encontrado) ...
+  const gameTitle = reviews.length > 0 ? reviews[0].gameTitle : decodeURIComponent(params.gameSlug);
 
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-bold text-center">{gameTitle}</h1>
+      <div className="text-center">
+        <h1 className="text-4xl font-bold">{gameTitle}</h1>
+      </div>
+
+      {/* Botão para Adicionar Review */}
+      <div className="flex justify-center">
+        <Link 
+          href={`/game/${params.gameSlug}/submit-review`}
+          className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-md transition-colors text-lg"
+        >
+          <PlusCircle size={24} />
+          Adicionar sua Review
+        </Link>
+      </div>
+
       <div className="space-y-6">
         {reviews.map(review => (
           <ReviewCard key={review.id} review={review} />

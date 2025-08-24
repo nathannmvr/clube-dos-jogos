@@ -1,5 +1,10 @@
 // src/lib/types.ts
 
+export interface Game {
+  slug: string;
+  title: string;
+}
+
 export interface GameReview {
   id: string;
   userId: string;
