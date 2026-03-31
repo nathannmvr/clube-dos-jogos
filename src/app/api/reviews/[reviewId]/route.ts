@@ -1,6 +1,6 @@
 // src/app/api/reviews/[reviewId]/route.ts
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';

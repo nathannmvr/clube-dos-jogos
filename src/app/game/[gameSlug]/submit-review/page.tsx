@@ -1,5 +1,5 @@
 // src/app/game/[gameSlug]/submit-review/page.tsx
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { notFound } from 'next/navigation';
 import { Game } from '@/lib/types';
 import ReviewForm from '@/components/ReviewForm'; // Nosso formulário agora é um componente
@@ -9,8 +9,9 @@ async function getGame(slug: string): Promise<Game | null> {
     return await kv.get<Game>(`game:${slug}`);
 }
 
-export default async function SubmitReviewForGamePage({ params }: { params: { gameSlug: string } }) {
-  const game = await getGame(params.gameSlug);
+export default async function SubmitReviewForGamePage({ params }: { params: Promise<{ gameSlug: string }> }) {
+  const { gameSlug } = await params;
+  const game = await getGame(gameSlug);
 
   if (!game) {
     notFound(); // Se o jogo não existe, mostra página 404

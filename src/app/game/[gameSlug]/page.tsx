@@ -1,6 +1,6 @@
 // src/app/game/[gameSlug]/page.tsx
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { Game, GameReview } from '@/lib/types';
 import { PlusCircle, Edit, Award } from 'lucide-react'; // 'User' e 'Clock' removidos
 import Link from 'next/link';
@@ -25,11 +25,12 @@ async function getGameDetails(gameSlug: string): Promise<Game | null> {
 
 // A definição do componente 'ReviewCard' foi REMOVIDA daqui, pois agora vive em ReviewList.tsx
 
-export default async function GamePage({ params }: { params: { gameSlug: string } }) {
+export default async function GamePage({ params }: { params: Promise<{ gameSlug: string }> }) {
+  const { gameSlug } = await params;
   const [session, game, reviews] = await Promise.all([
     getServerSession(authOptions),
-    getGameDetails(params.gameSlug),
-    getReviewsForGame(params.gameSlug),
+    getGameDetails(gameSlug),
+    getReviewsForGame(gameSlug),
   ]);
 
   if (!game) {
@@ -70,7 +71,7 @@ export default async function GamePage({ params }: { params: { gameSlug: string 
         <div className="flex justify-center">
           {!userReview ? (
             <Link 
-              href={`/game/${params.gameSlug}/submit-review`}
+              href={`/game/${gameSlug}/submit-review`}
               className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-md transition-colors text-lg"
             >
               <PlusCircle size={24} />

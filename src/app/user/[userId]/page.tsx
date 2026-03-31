@@ -1,6 +1,6 @@
 // src/app/user/[userId]/page.tsx
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { GameReview } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
@@ -19,14 +19,15 @@ async function getReviewsByUserId(userId: string): Promise<GameReview[]> {
   return reviews.filter((review): review is GameReview => review !== null).sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export default async function UserProfilePage({ params }: { params: { userId: string } }) {
+export default async function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.id !== params.userId) {
+  if (!session || session.user.id !== userId) {
     notFound();
   }
   
-  const userReviews = await getReviewsByUserId(params.userId);
+  const userReviews = await getReviewsByUserId(userId);
 
   return (
     <div className="max-w-4xl mx-auto">

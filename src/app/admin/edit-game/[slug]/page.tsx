@@ -1,6 +1,6 @@
 // src/app/admin/edit-game/[slug]/page.tsx
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { Game } from '@/lib/types';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
@@ -11,12 +11,13 @@ async function getGame(slug: string): Promise<Game | null> {
   return await kv.get<Game>(`game:${slug}`);
 }
 
-export default async function EditGamePage({ params }: { params: { slug: string } }) {
+export default async function EditGamePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   // --- LOGS PARA DEPURAÇÃO ---
   // Estes logs irão aparecer no seu terminal (onde corre o 'npm run dev')
   console.log("\n--- A ACEDER À PÁGINA DE EDIÇÃO DE JOGO ---");
-  console.log("PARAMS RECEBIDOS PELA URL:", params);
-  console.log("SLUG A SER PROCURADO NA BASE DE DADOS:", params.slug);
+  console.log("PARAMS RECEBIDOS PELA URL:", { slug });
+  console.log("SLUG A SER PROCURADO NA BASE DE DADOS:", slug);
   // -------------------------
 
   const session = await getServerSession(authOptions);
@@ -26,7 +27,7 @@ export default async function EditGamePage({ params }: { params: { slug: string 
     redirect('/');
   }
 
-  const game = await getGame(params.slug);
+  const game = await getGame(slug);
 
   // --- LOGS PARA DEPURAÇÃO ---
   console.log("RESULTADO DA BUSCA PELO JOGO NA BASE DE DADOS:", game);

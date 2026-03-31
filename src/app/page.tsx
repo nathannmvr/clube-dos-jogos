@@ -1,6 +1,6 @@
 // src/app/page.tsx
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import Link from 'next/link';
 import { Game } from '@/lib/types';
 

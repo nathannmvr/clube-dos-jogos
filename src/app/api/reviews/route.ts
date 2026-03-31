@@ -1,6 +1,6 @@
 // src/app/api/reviews/route.ts
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { NextRequest, NextResponse } from 'next/server';
 import { GameReview } from '@/lib/types';
 import { nanoid } from 'nanoid';

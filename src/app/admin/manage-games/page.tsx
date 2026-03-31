@@ -1,6 +1,6 @@
 // src/app/admin/manage-games/page.tsx
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { Game } from '@/lib/types';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';

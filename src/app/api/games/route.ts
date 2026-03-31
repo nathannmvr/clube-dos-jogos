@@ -1,5 +1,5 @@
 // src/app/api/games/route.ts
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { Game } from '@/lib/types';
