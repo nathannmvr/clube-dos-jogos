@@ -21,12 +21,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const { title } = await request.json();
+    const { title, coverUrl } = await request.json();
     if (!title) {
       return NextResponse.json({ success: false, error: 'Título em falta.' }, { status: 400 });
     }
     
-    // Agora esperamos (await) que a Promise dos 'params' seja resolvida
     const { slug } = await context.params;
     const gameKey = `game:${slug}`;
     const game = await kv.get<Game>(gameKey);
@@ -36,6 +35,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     game.title = title;
+    if (coverUrl !== undefined) game.coverUrl = coverUrl || undefined;
     await kv.set(gameKey, game);
 
     const reviewIds = await kv.lrange<string>(`reviews_for_game:${slug}`, 0, -1);

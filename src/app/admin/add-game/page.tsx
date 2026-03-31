@@ -1,22 +1,32 @@
 // src/app/admin/add-game/page.tsx
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import AddGameForm from "@/components/AddGameForm"; // Criaremos este componente a seguir
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import AddGameForm from "@/components/AddGameForm";
+import Link from "next/link";
 
 export default async function AddGamePage() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
-
-  // Proteção da página no lado do servidor
   if (!session?.user?.email || !adminEmails.includes(session.user.email)) {
-    redirect('/'); // Se não for admin, redireciona para a home
+    redirect('/');
   }
 
   return (
-    <div className="max-w-xl mx-auto">
-      <h1 className="text-4xl font-bold mb-8">Adicionar Novo Jogo</h1>
-      <p className="text-slate-400 mb-6">Esta página só é visível para administradores.</p>
-      <AddGameForm />
+    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <Link href="/admin/manage-games">
+          <button className="btn-pixel btn-pixel-yellow" style={{ fontSize: '8px' }}>
+            ◀ VOLTAR
+          </button>
+        </Link>
+        <h1 className="pixel-font neon-cyan" style={{ fontSize: '10px' }}>
+          ADICIONAR JOGO
+        </h1>
+      </div>
+      <div className="pixel-card" style={{ padding: '32px' }}>
+        <AddGameForm />
+      </div>
     </div>
   );
 }

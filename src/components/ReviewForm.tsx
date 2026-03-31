@@ -17,18 +17,24 @@ const reviewFields = [
   { id: 'trilhaSonora', label: 'Trilha Sonora' },
   { id: 'diversao', label: 'Diversão' },
   { id: 'rejogabilidade', label: 'Rejogabilidade' },
-  { id: 'graficos', label: 'Qualidade dos Gráficos' },
+  { id: 'graficos', label: 'Gráficos' },
   { id: 'complexidade', label: 'Complexidade' },
   { id: 'lore', label: 'Lore' },
 ];
 
+function getScoreColor(val: number) {
+  if (val >= 8) return '#39ff14';
+  if (val >= 6) return '#ffd700';
+  return '#ff4444';
+}
+
 export default function ReviewForm({ game, existingReview }: ReviewFormProps) {
   const router = useRouter();
   const { status, data: session } = useSession();
+  const isEditing = !!existingReview;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [formState, setFormState] = useState({
     horasJogadas: existingReview?.horasJogadas.toString() || '',
     scores: existingReview?.scores || {
@@ -36,42 +42,29 @@ export default function ReviewForm({ game, existingReview }: ReviewFormProps) {
       rejogabilidade: 5, graficos: 5, complexidade: 5, lore: 5,
     },
   });
-  
   const [averageScore, setAverageScore] = useState(existingReview?.notaFinal || 5);
 
-  // --- CORREÇÃO AQUI ---
-  // A variável 'isEditing' é declarada no escopo principal do componente.
-  const isEditing = !!existingReview;
-
   useEffect(() => {
-    const scoresArray = Object.values(formState.scores);
-    const sum = scoresArray.reduce((total, score) => total + score, 0);
-    const average = sum / scoresArray.length;
-    setAverageScore(parseFloat(average.toFixed(1)));
+    const vals = Object.values(formState.scores);
+    setAverageScore(parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)));
   }, [formState.scores]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormState(prevState => ({ ...prevState, [e.target.name]: e.target.value }));
-  };
-  
-  const handleScoreChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormState(prevState => ({
-      ...prevState,
-      scores: { ...prevState.scores, [e.target.name]: parseInt(e.target.value, 10) }
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setFormState(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleScoreChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setFormState(p => ({
+      ...p,
+      scores: { ...p.scores, [e.target.name]: parseInt(e.target.value, 10) },
     }));
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
-    // A variável 'isEditing' já está acessível aqui
-    const method = isEditing ? 'PUT' : 'POST';
-
     try {
       const response = await fetch('/api/reviews', {
-        method: method,
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reviewId: existingReview?.id,
@@ -82,71 +75,112 @@ export default function ReviewForm({ game, existingReview }: ReviewFormProps) {
           scores: formState.scores,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error((await response.json()).error || 'Falha ao processar a review.');
-      }
-      
+      if (!response.ok) throw new Error((await response.json()).error || 'Falha ao processar.');
       router.push(`/game/${game.slug}`);
       router.refresh();
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocorreu um erro desconhecido.');
+      setError(err instanceof Error ? err.message : 'Erro desconhecido.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (status === 'loading') return <p>Carregando...</p>;
+  if (status === 'loading') {
+    return <p style={{ fontFamily: "'VT323'", fontSize: '22px', color: '#6060a0' }}>CARREGANDO<span className="blink">...</span></p>;
+  }
+
   if (status === 'unauthenticated') {
     return (
-      <div className="text-center bg-slate-800 p-8 rounded-lg">
-        <h1 className="text-2xl font-bold text-cyan-400 mb-4">Acesso Negado</h1>
-        <p className="text-slate-300 mb-6">Você precisa de fazer login para deixar uma review.</p>
-        <button onClick={() => signIn('google')} className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-6 rounded-md">
-          Fazer Login com Google
+      <div style={{ textAlign: 'center', padding: '48px 32px', border: '2px solid #2a2a5a', background: '#0d0d1a' }}>
+        <h1 className="pixel-font neon-pink" style={{ fontSize: '10px', marginBottom: '20px' }}>ACESSO NEGADO</h1>
+        <p style={{ fontFamily: "'VT323'", fontSize: '20px', color: '#a0a0d0', marginBottom: '24px' }}>Você precisa fazer login para deixar uma review.</p>
+        <button onClick={() => signIn('google')} className="btn-pixel btn-pixel-cyan" style={{ fontSize: '9px' }}>
+          ▶ LOGIN COM GOOGLE
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-4xl font-bold mb-2">
-        {isEditing ? 'Editar' : 'Adicionar'} Review para <span className="text-cyan-400">{game.title}</span>
+    <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+      <h1 className="pixel-font" style={{ fontSize: '10px', color: '#00f5ff', marginBottom: '8px', lineHeight: '2' }}>
+        {isEditing ? 'EDITAR' : 'NOVA'} REVIEW
       </h1>
-      <p className="text-slate-400 mb-8">Olá, {session?.user?.name}! {isEditing ? "Altere os dados abaixo." : "Preencha os dados abaixo."}</p>
-      
-      <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800 p-8 rounded-lg border border-slate-700">
-        <div className="space-y-4 pt-4 border-t border-slate-700">
-          {reviewFields.map(field => (
-            <div key={field.id}>
-              <label htmlFor={field.id} className="block text-sm font-medium text-slate-300 mb-2 flex justify-between">
-                <span>{field.label}</span>
-                <span className="font-bold text-cyan-400">{formState.scores[field.id as keyof typeof formState.scores]}/10</span>
-              </label>
-              <input type="range" min="0" max="10" name={field.id} id={field.id} value={formState.scores[field.id as keyof typeof formState.scores]} onChange={handleScoreChange} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
-            </div>
-          ))}
+      <p style={{ fontFamily: "'VT323'", fontSize: '20px', color: '#ffd700', marginBottom: '8px' }}>
+        {game.title}
+      </p>
+      <p style={{ fontFamily: "'VT323'", fontSize: '17px', color: '#6060a0', marginBottom: '24px' }}>
+        Olá, {session?.user?.name}!
+      </p>
+
+      <form onSubmit={handleSubmit}>
+        {/* Score sliders */}
+        <div className="pixel-card" style={{ padding: '24px', marginBottom: '16px' }}>
+          <p className="pixel-font" style={{ fontSize: '8px', color: '#6060a0', marginBottom: '20px' }}>CATEGORIAS</p>
+          {reviewFields.map(field => {
+            const val = formState.scores[field.id as keyof typeof formState.scores];
+            const col = getScoreColor(val);
+            return (
+              <div key={field.id} style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#a0a0d0' }}>{field.label}</span>
+                  <span style={{ fontFamily: "'Press Start 2P'", fontSize: '11px', color: col, textShadow: `0 0 6px ${col}` }}>
+                    {val}/10
+                  </span>
+                </label>
+                <input
+                  type="range" min="0" max="10"
+                  name={field.id} value={val}
+                  onChange={handleScoreChange}
+                  style={{ accentColor: col }}
+                  className="w-full"
+                />
+              </div>
+            );
+          })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-700">
-            <div>
-                <label htmlFor="horasJogadas" className="block text-sm font-medium text-slate-300 mb-2">Horas Jogadas</label>
-                <input type="number" step="0.1" name="horasJogadas" id="horasJogadas" required value={formState.horasJogadas} onChange={handleChange} className="w-full bg-slate-900 border border-slate-600 rounded-md p-2 focus:ring-cyan-500 focus:border-cyan-500"/>
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nota Final (Média)</label>
-                <div className="w-full text-center bg-slate-900 border border-slate-700 rounded-md p-2 text-xl font-bold text-cyan-400">
-                    {averageScore} / 10
-                </div>
-            </div>
+        {/* Hours + Final score */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+          <div className="pixel-card" style={{ padding: '16px' }}>
+            <label style={{ display: 'block', fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#6060a0', marginBottom: '8px' }}>
+              HORAS JOGADAS
+            </label>
+            <input
+              type="number" step="0.1" name="horasJogadas"
+              required value={formState.horasJogadas} onChange={handleChange}
+              className="retro-input"
+              style={{ fontSize: '22px' }}
+            />
+          </div>
+          <div className="pixel-card" style={{ padding: '16px', textAlign: 'center' }}>
+            <p style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#6060a0', marginBottom: '12px' }}>NOTA FINAL</p>
+            <p style={{
+              fontFamily: "'Press Start 2P'", fontSize: '22px',
+              color: getScoreColor(averageScore),
+              textShadow: `0 0 12px ${getScoreColor(averageScore)}`,
+            }}>
+              {averageScore}
+            </p>
+            <p style={{ fontFamily: "'VT323'", fontSize: '16px', color: '#6060a0' }}>/10 (média)</p>
+          </div>
         </div>
-        
-        {error && <p className="text-red-400 text-center bg-red-900/50 p-3 rounded-md">{error}</p>}
 
-        <button type="submit" disabled={isLoading} className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-colors text-lg">
-          {isLoading ? (isEditing ? 'A guardar...' : 'A enviar...') : (isEditing ? 'Guardar Alterações' : 'Publicar Review')}
+        {error && (
+          <div style={{
+            padding: '12px', marginBottom: '16px',
+            border: '2px solid #ff4444', background: 'rgba(255,68,68,0.1)',
+            fontFamily: "'VT323'", fontSize: '18px', color: '#ff4444',
+          }}>
+            ✗ {error}
+          </div>
+        )}
+
+        <button type="submit" disabled={isLoading} className="btn-pixel btn-pixel-cyan"
+          style={{ width: '100%', fontSize: '10px', padding: '14px', opacity: isLoading ? 0.6 : 1 }}>
+          {isLoading
+            ? (isEditing ? 'SALVANDO...' : 'ENVIANDO...')
+            : (isEditing ? '★ SALVAR ALTERAÇÕES' : '▶ PUBLICAR REVIEW')}
         </button>
       </form>
     </div>

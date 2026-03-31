@@ -4,43 +4,69 @@
 import { useState } from 'react';
 import { GameReview } from '@/lib/types';
 import Link from 'next/link';
-import Image from 'next/image'; // 1. Importe o componente Image
-import { Clock, Star, Edit, Trash2 } from 'lucide-react'; // 2. O ícone 'User' foi removido
+import Image from 'next/image';
+import { Clock, Star, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-function ReviewCard({ review, currentUserId, onDelete }: { review: GameReview, currentUserId?: string, onDelete: (reviewId: string) => void }) {
+const SCORE_LABELS: Record<string, string> = {
+  jogabilidade: 'Jogabilidade', arte: 'Arte', trilhaSonora: 'Trilha',
+  diversao: 'Diversão', rejogabilidade: 'Rejog.', graficos: 'Gráficos',
+  complexidade: 'Complex.', lore: 'Lore',
+};
+
+function ScoreBadge({ value }: { value: number }) {
+  const color = value >= 8 ? '#39ff14' : value >= 6 ? '#ffd700' : '#ff4444';
+  const bg = value >= 8 ? 'rgba(57,255,20,0.1)' : value >= 6 ? 'rgba(255,215,0,0.1)' : 'rgba(255,68,68,0.1)';
+  return (
+    <div style={{
+      padding: '4px 6px', border: `1px solid ${color}`,
+      background: bg, textAlign: 'center',
+    }}>
+      <div style={{ fontFamily: "'VT323'", fontSize: '16px', color, lineHeight: 1 }}>{value}</div>
+    </div>
+  );
+}
+
+function ReviewCard({ review, currentUserId, onDelete }: {
+  review: GameReview;
+  currentUserId?: string;
+  onDelete: (id: string) => void;
+}) {
   const isOwner = review.userId === currentUserId;
 
   const handleDelete = () => {
-    if (window.confirm("Tem a certeza que quer apagar esta review permanentemente?")) {
-      onDelete(review.id);
-    }
+    if (window.confirm('Apagar esta review permanentemente?')) onDelete(review.id);
   };
 
   return (
-    <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+    <div className="pixel-card" style={{ padding: '0', overflow: 'hidden', marginBottom: '16px' }}>
+      {/* Review Header */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', background: '#0d0d22',
+        borderBottom: '2px solid #2a2a5a',
+        flexWrap: 'wrap', gap: '8px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {review.userImage && (
-            // 3. A tag <img> foi substituída pelo componente Image
-            <Image
-              src={review.userImage}
-              alt={review.userName}
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-full"
-            />
+            <Image src={review.userImage} alt={review.userName} width={32} height={32}
+              style={{ borderRadius: 0, border: '2px solid #39ff14' }} />
           )}
-          <p className="font-bold text-lg">{review.userName}</p>
+          <span style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00f5ff' }}>
+            {review.userName}
+          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <p className="text-sm text-slate-400">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{ fontFamily: "'VT323'", fontSize: '15px', color: '#6060a0' }}>
+            {new Date(review.createdAt).toLocaleDateString('pt-BR')}
+          </span>
           {isOwner && (
             <>
-              <Link href={`/review/${review.id}/edit`} className="flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition-colors" title="Editar">
+              <Link href={`/review/${review.id}/edit`} title="Editar"
+                style={{ color: '#ffd700' }}>
                 <Edit size={16} />
               </Link>
-              <button onClick={handleDelete} className="flex items-center gap-1 text-sm text-red-500 hover:text-red-400 transition-colors" title="Apagar">
+              <button onClick={handleDelete} title="Apagar" style={{ color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer' }}>
                 <Trash2 size={16} />
               </button>
             </>
@@ -48,59 +74,94 @@ function ReviewCard({ review, currentUserId, onDelete }: { review: GameReview, c
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6 text-center">
-        {review.scores && Object.entries(review.scores).map(([key, value]) => (
-          <div key={key} className="bg-slate-900/50 p-2 rounded-md">
-            <p className="text-xs capitalize text-slate-300">{key.replace('trilhaSonora', 'Trilha')}</p>
-            <p className="font-bold text-lg text-cyan-400">{value}/10</p>
+      {/* Score Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '1px', background: '#1a1a3a',
+        borderBottom: '1px solid #1a1a3a',
+      }}>
+        {review.scores && Object.entries(review.scores).map(([key, val]) => (
+          <div key={key} style={{ background: '#12122a', padding: '8px', textAlign: 'center' }}>
+            <p style={{ fontFamily: "'VT323'", fontSize: '13px', color: '#6060a0', marginBottom: '4px' }}>
+              {SCORE_LABELS[key] || key}
+            </p>
+            <ScoreBadge value={val} />
           </div>
         ))}
       </div>
 
-      <div className="flex justify-between items-center border-t border-slate-700 pt-4 mt-4">
-        <div className="flex items-center gap-2" title="Horas Jogadas">
-          <Clock className="w-5 h-5 text-slate-400" />
-          <span className="font-semibold">{review.horasJogadas}h</span>
+      {/* Footer */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 16px', background: '#0d0d22',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6060a0' }}>
+          <Clock size={14} />
+          <span style={{ fontFamily: "'VT323'", fontSize: '18px' }}>{review.horasJogadas}h</span>
         </div>
-        <div className="flex items-center gap-2 bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full" title="Nota Final">
-          <Star className="w-5 h-5" />
-          <span className="font-bold text-lg">{review.notaFinal}/10</span>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          fontFamily: "'Press Start 2P'", fontSize: '12px',
+        }}>
+          <Star size={14} style={{ color: '#ffd700' }} />
+          <span className="neon-yellow">{review.notaFinal}/10</span>
         </div>
       </div>
     </div>
   );
 }
 
-export default function ReviewList({ initialReviews, currentUserId }: { initialReviews: GameReview[], currentUserId?: string }) {
+export default function ReviewList({ initialReviews, currentUserId }: {
+  initialReviews: GameReview[];
+  currentUserId?: string;
+}) {
   const [reviews, setReviews] = useState(initialReviews);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleDeleteReview = async (reviewId: string) => {
     setError(null);
-    const response = await fetch(`/api/reviews/${reviewId}`, {
-      method: 'DELETE',
-    });
-
+    const response = await fetch(`/api/reviews/${reviewId}`, { method: 'DELETE' });
     if (response.ok) {
-      setReviews(currentReviews => currentReviews.filter(r => r.id !== reviewId));
-      router.refresh(); 
+      setReviews(curr => curr.filter(r => r.id !== reviewId));
+      router.refresh();
     } else {
       const result = await response.json();
       setError(result.error || 'Não foi possível apagar a review.');
     }
   };
 
+  if (reviews.length === 0) {
+    return (
+      <div style={{
+        textAlign: 'center', padding: '48px 32px',
+        border: '2px solid #2a2a5a', background: '#0d0d1a',
+      }}>
+        <p style={{ fontFamily: "'Press Start 2P'", fontSize: '9px', color: '#6060a0' }}>
+          AINDA NÃO HÁ NENHUMA REVIEW
+        </p>
+        <p style={{ fontFamily: "'VT323'", fontSize: '20px', color: '#39ff14', marginTop: '12px' }}>
+          Seja o primeiro a avaliar este jogo!
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {error && <p className="text-red-400 bg-red-900/50 p-4 text-center rounded-lg">{error}</p>}
-      {reviews.length > 0 ? (
-        reviews.map(review => (
-          <ReviewCard key={review.id} review={review} currentUserId={currentUserId} onDelete={handleDeleteReview} />
-        ))
-      ) : (
-        <p className="text-center text-slate-400 bg-slate-800 p-6 rounded-lg">Ainda não há nenhuma review para este jogo. Seja o primeiro!</p>
+    <div>
+      {error && (
+        <div style={{
+          padding: '12px', marginBottom: '16px',
+          border: '2px solid #ff4444', background: 'rgba(255,68,68,0.1)',
+          fontFamily: "'VT323'", fontSize: '18px', color: '#ff4444',
+        }}>
+          ✗ {error}
+        </div>
       )}
+      {reviews.map(review => (
+        <ReviewCard key={review.id} review={review} currentUserId={currentUserId} onDelete={handleDeleteReview} />
+      ))}
     </div>
   );
 }

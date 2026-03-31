@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { title } = await request.json();
+    const { title, coverUrl } = await request.json();
 
     if (!title || typeof title !== 'string') {
       return NextResponse.json({ success: false, error: 'Título inválido.' }, { status: 400 });
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Este jogo já foi adicionado.' }, { status: 409 });
     }
 
-    const newGame: Game = { title, slug };
+    const newGame: Game = { title, slug, coverUrl: coverUrl || undefined };
 
     // 3. Salva o novo jogo no banco de dados
     await kv.set(`game:${slug}`, newGame);

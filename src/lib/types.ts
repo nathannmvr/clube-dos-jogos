@@ -3,6 +3,7 @@
 export interface Game {
   slug: string;
   title: string;
+  coverUrl?: string;
 }
 
 export interface GameReview {

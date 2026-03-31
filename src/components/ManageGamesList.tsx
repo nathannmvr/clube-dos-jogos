@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Game } from '@/lib/types';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -13,17 +14,12 @@ export default function ManageGamesList({ initialGames }: { initialGames: Game[]
   const router = useRouter();
 
   const handleDelete = async (slug: string) => {
-    // Pede confirmação antes de apagar
-    if (!window.confirm("Tem a certeza que quer apagar este jogo? Todas as reviews associadas serão perdidas PERMANENTEMENTE.")) {
-      return;
-    }
+    if (!window.confirm('Apagar este jogo e todas as suas reviews PERMANENTEMENTE?')) return;
 
     const response = await fetch(`/api/games/${slug}`, { method: 'DELETE' });
-
     if (response.ok) {
-      // Remove o jogo da lista na UI sem precisar de recarregar a página
-      setGames(games.filter(game => game.slug !== slug));
-      router.refresh(); // Atualiza os dados do servidor em segundo plano
+      setGames(games.filter(g => g.slug !== slug));
+      router.refresh();
     } else {
       const result = await response.json();
       setError(result.error || 'Falha ao apagar o jogo.');
@@ -31,26 +27,76 @@ export default function ManageGamesList({ initialGames }: { initialGames: Game[]
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg">
-      {error && <p className="p-4 text-red-400 bg-red-900/50">{error}</p>}
-      <ul className="divide-y divide-slate-700">
-        {games.map(game => (
-          <li key={game.slug} className="p-4 flex justify-between items-center">
-            <div>
-              <p className="text-lg font-semibold">{game.title}</p>
-              <p className="text-sm text-slate-400">/{game.slug}</p>
+    <div>
+      {error && (
+        <div style={{
+          padding: '12px', marginBottom: '16px',
+          border: '2px solid #ff4444', background: 'rgba(255,68,68,0.1)',
+          fontFamily: "'VT323'", fontSize: '18px', color: '#ff4444',
+        }}>
+          ✗ {error}
+        </div>
+      )}
+
+      {games.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px', border: '2px solid #2a2a5a', background: '#0d0d1a' }}>
+          <p style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#6060a0' }}>NENHUM JOGO CADASTRADO</p>
+        </div>
+      ) : (
+        <div style={{ border: '2px solid #2a2a5a' }}>
+          {games.map((game, i) => (
+            <div key={game.slug} style={{
+              display: 'flex', alignItems: 'center', gap: '16px',
+              padding: '12px 16px', background: i % 2 === 0 ? '#0d0d1a' : '#12122a',
+              borderBottom: '1px solid #1a1a3a',
+            }}>
+              {/* Cover thumbnail */}
+              <div style={{
+                width: '64px', height: '42px', flexShrink: 0,
+                border: '1px solid #2a2a5a', background: '#0a0a18', overflow: 'hidden', position: 'relative',
+              }}>
+                {game.coverUrl ? (
+                  <Image src={game.coverUrl} alt={game.title} fill style={{ objectFit: 'cover' }} />
+                ) : (
+                  <div style={{
+                    width: '100%', height: '100%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '20px', color: '#2a2a5a',
+                  }}>🎮</div>
+                )}
+              </div>
+
+              {/* Game info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00f5ff',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {game.title}
+                </p>
+                <p style={{ fontFamily: "'VT323'", fontSize: '15px', color: '#6060a0', marginTop: '4px' }}>
+                  /{game.slug}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
+                <Link href={`/admin/edit-game/${game.slug}`}
+                  style={{ color: '#ffd700', transition: 'color 0.15s' }}
+                  title="Editar">
+                  <Edit size={18} />
+                </Link>
+                <button
+                  onClick={() => handleDelete(game.slug)}
+                  style={{ color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' }}
+                  title="Apagar">
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href={`/admin/edit-game/${game.slug}`} className="text-amber-400 hover:text-amber-300">
-                <Edit size={20} />
-              </Link>
-              <button onClick={() => handleDelete(game.slug)} className="text-red-500 hover:text-red-400">
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
