@@ -8,6 +8,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import ManageGamesList from '@/components/ManageGamesList'; // Criaremos este componente
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 async function getAllGames() {
   const gameSlugs = await kv.smembers('games:all');
   const games = await Promise.all(

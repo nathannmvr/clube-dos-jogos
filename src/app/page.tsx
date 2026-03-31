@@ -4,6 +4,8 @@ import { kv } from '@/lib/kv';
 import { Game, GameReview } from '@/lib/types';
 import HomeGameList from '@/components/HomeGameList';
 
+export const dynamic = 'force-dynamic';
+
 async function getAllGames(): Promise<(Game & { reviewCount: number; avgScore: number | null })[]> {
   const gameSlugs = await kv.smembers('games:all');
   if (!gameSlugs || gameSlugs.length === 0) return [];
