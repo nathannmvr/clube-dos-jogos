@@ -2,13 +2,11 @@
 
 import { useState } from 'react';
 import { ThumbsUp } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export default function LikeButton({ reviewId, initialLikes, initialUserLiked }: { reviewId: string, initialLikes: number, initialUserLiked: boolean }) {
   const [likes, setLikes] = useState(initialLikes);
   const [userLiked, setUserLiked] = useState(initialUserLiked);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLike = async () => {
     if (loading) return;

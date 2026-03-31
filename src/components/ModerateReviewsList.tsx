@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { GameReview } from '@/lib/types';
 import { Clock, Star, Trash2 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function ModerateReviewsList({ initialReviews }: { initialReviews: GameReview[] }) {
   const [reviews, setReviews] = useState(initialReviews);

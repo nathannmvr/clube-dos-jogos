@@ -1,8 +1,6 @@
 // src/app/page.tsx
 
 import { kv } from '@/lib/kv';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Game, GameReview } from '@/lib/types';
 import HomeGameList from '@/components/HomeGameList';
 
