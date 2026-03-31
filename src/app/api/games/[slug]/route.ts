@@ -21,7 +21,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const { title, coverUrl } = await request.json();
+    const { title, coverUrl, categories } = await request.json();
     if (!title) {
       return NextResponse.json({ success: false, error: 'Título em falta.' }, { status: 400 });
     }
@@ -36,7 +36,14 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     game.title = title;
     if (coverUrl !== undefined) game.coverUrl = coverUrl || undefined;
+    if (categories !== undefined) game.categories = categories;
     await kv.set(gameKey, game);
+
+    if (categories && Array.isArray(categories)) {
+      for (const cat of categories) {
+        await kv.sadd('categories:all', cat);
+      }
+    }
 
     const reviewIds = await kv.lrange<string>(`reviews_for_game:${slug}`, 0, -1);
     for (const reviewId of reviewIds) {

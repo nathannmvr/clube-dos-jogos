@@ -9,17 +9,30 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { notFound } from 'next/navigation';
 import ReviewList from '@/components/ReviewList';
+import FavoriteButton from '@/components/FavoriteButton';
 
 async function getGameDetails(slug: string): Promise<Game | null> {
   return await kv.get<Game>(`game:${slug}`);
 }
 
-async function getReviewsForGame(slug: string): Promise<GameReview[]> {
+async function getReviewsForGame(slug: string, currentUserId?: string): Promise<GameReview[]> {
   const reviewIds = await kv.lrange<string>(`reviews_for_game:${slug}`, 0, -1);
   if (!reviewIds || reviewIds.length === 0) return [];
-  const reviews = await kv.mget<GameReview[]>(...reviewIds.map(id => `review:${id}`));
-  return reviews.filter((r): r is GameReview => r !== null)
-    .sort((a, b) => b.createdAt - a.createdAt);
+  const rawReviews = await kv.mget<GameReview[]>(...reviewIds.map(id => `review:${id}`));
+  
+  const reviews = await Promise.all(
+    rawReviews.filter((r): r is GameReview => r !== null).map(async (review) => {
+      const likesCount = await kv.scard(`review:${review.id}:likes`);
+      let userLiked = false;
+      if (currentUserId) {
+         const liked = await kv.sismember(`review:${review.id}:likes`, currentUserId);
+         userLiked = liked === 1;
+      }
+      return { ...review, likesCount, userLiked };
+    })
+  );
+
+  return reviews.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 function getScoreClass(score: number) {
@@ -46,16 +59,22 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 export default async function GamePage({ params }: { params: Promise<{ gameSlug: string }> }) {
   const { gameSlug } = await params;
-  const [session, game, reviews] = await Promise.all([
-    getServerSession(authOptions),
+  const session = await getServerSession(authOptions);
+  const currentUserId = session?.user?.id;
+  const [game, reviews] = await Promise.all([
     getGameDetails(gameSlug),
-    getReviewsForGame(gameSlug),
+    getReviewsForGame(gameSlug, currentUserId),
   ]);
 
   if (!game) notFound();
 
-  const currentUserId = session?.user?.id;
   const userReview = reviews.find(r => r.userId === currentUserId);
+
+  let initialIsFavorite = false;
+  if (currentUserId) {
+    const isFavorited = await kv.sismember(`user:${currentUserId}:favorites`, gameSlug);
+    initialIsFavorite = isFavorited === 1;
+  }
 
   // Compute aggregate scores
   let averageScore: string | null = null;
@@ -202,25 +221,29 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
               borderTop: '2px solid rgba(42, 42, 90, 0.5)',
               display: 'flex', gap: '16px', alignItems: 'center',
               backdropFilter: 'blur(8px)',
+              justifyContent: 'space-between',
             }}>
-              {!userReview ? (
-                <Link href={`/game/${gameSlug}/submit-review`}>
-                  <button className="btn-pixel btn-pixel-cyan" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9px' }}>
-                    <PlusCircle size={14} /> ADICIONAR REVIEW
-                  </button>
-                </Link>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#39ff14', textShadow: '1px 1px 0px #000' }}>
-                    ★ Sua review: <strong>{userReview.notaFinal}/10</strong>
-                  </span>
-                  <Link href={`/review/${userReview.id}/edit`}>
-                    <button className="btn-pixel btn-pixel-yellow" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '8px' }}>
-                      <Edit size={12} /> EDITAR
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                {!userReview ? (
+                  <Link href={`/game/${gameSlug}/submit-review`}>
+                    <button className="btn-pixel btn-pixel-cyan" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9px' }}>
+                      <PlusCircle size={14} /> ADICIONAR REVIEW
                     </button>
                   </Link>
-                </div>
-              )}
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#39ff14', textShadow: '1px 1px 0px #000' }}>
+                      ★ Sua review: <strong>{userReview.notaFinal}/10</strong>
+                    </span>
+                    <Link href={`/review/${userReview.id}/edit`}>
+                      <button className="btn-pixel btn-pixel-yellow" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '8px' }}>
+                        <Edit size={12} /> EDITAR
+                      </button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+              <FavoriteButton gameSlug={gameSlug} initialIsFavorite={initialIsFavorite} />
             </div>
           )}
         </div>

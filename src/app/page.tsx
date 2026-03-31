@@ -4,6 +4,7 @@ import { kv } from '@/lib/kv';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Game, GameReview } from '@/lib/types';
+import HomeGameList from '@/components/HomeGameList';
 
 async function getAllGames(): Promise<(Game & { reviewCount: number; avgScore: number | null })[]> {
   const gameSlugs = await kv.smembers('games:all');
@@ -37,7 +38,10 @@ async function getAllGames(): Promise<(Game & { reviewCount: number; avgScore: n
 }
 
 export default async function HomePage() {
-  const games = await getAllGames();
+  const gamesPromise = getAllGames();
+  const categoriesPromise = kv.smembers('categories:all');
+  const [games, categoriesRaw] = await Promise.all([gamesPromise, categoriesPromise]);
+  const allCategories = (categoriesRaw || []).filter((c): c is string => typeof c === 'string').sort();
 
   return (
     <div>
@@ -53,7 +57,7 @@ export default async function HomePage() {
         </p>
       </div>
 
-      {/* GAME GRID */}
+      {/* GAME GRID & FILTERS */}
       {games.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: '64px 32px',
@@ -67,87 +71,7 @@ export default async function HomePage() {
           </p>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-          gap: '24px',
-        }}>
-          {games.map((game) => (
-            <Link key={game.slug} href={`/game/${game.slug}`} style={{ textDecoration: 'none' }}>
-              <div className="game-card pixel-card" style={{
-                cursor: 'pointer',
-                overflow: 'hidden',
-              }}>
-                {/* Cover Image */}
-                <div style={{
-                  width: '100%', height: '160px', position: 'relative',
-                  background: '#08081a', overflow: 'hidden',
-                }}>
-                  {game.coverUrl ? (
-                    <Image
-                      src={game.coverUrl}
-                      alt={game.title}
-                      fill
-                      style={{ objectFit: 'cover', transition: 'transform 0.3s' }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%', height: '100%',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #0d0d28, #1a0a2e)',
-                    }}>
-                      <span style={{ fontSize: '48px' }}>🎮</span>
-                      <span style={{
-                        fontFamily: "'Press Start 2P'", fontSize: '7px',
-                        color: '#2a2a5a', marginTop: '8px',
-                      }}>SEM CAPA</span>
-                    </div>
-                  )}
-                  {/* Overlay gradient */}
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    height: '60px',
-                    background: 'linear-gradient(transparent, rgba(10,10,18,0.9))',
-                  }} />
-                </div>
-
-                {/* Info */}
-                <div style={{ padding: '16px' }}>
-                  <p className="pixel-font" style={{
-                    fontSize: '8px', color: '#00f5ff',
-                    marginBottom: '10px', lineHeight: '1.8',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {game.title}
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                    {/* Average score badge */}
-                    {game.avgScore !== null ? (
-                      <div style={{
-                        fontFamily: "'Press Start 2P'", fontSize: '9px', padding: '3px 7px',
-                        background: game.avgScore >= 8 ? 'rgba(57,255,20,0.15)' : game.avgScore >= 6 ? 'rgba(255,215,0,0.15)' : 'rgba(255,68,68,0.15)',
-                        border: `1px solid ${game.avgScore >= 8 ? '#39ff14' : game.avgScore >= 6 ? '#ffd700' : '#ff4444'}`,
-                        color: game.avgScore >= 8 ? '#39ff14' : game.avgScore >= 6 ? '#ffd700' : '#ff4444',
-                        flexShrink: 0,
-                      }}>
-                        {game.avgScore}
-                      </div>
-                    ) : null}
-                    <span style={{
-                      fontFamily: "'VT323'", fontSize: '16px',
-                      color: game.reviewCount > 0 ? '#39ff14' : '#6060a0',
-                      flex: 1,
-                    }}>
-                      {game.reviewCount > 0 ? `★ ${game.reviewCount} REVIEW${game.reviewCount > 1 ? 'S' : ''}` : 'SEM REVIEWS'}
-                    </span>
-                    <span className="neon-green" style={{ fontFamily: "'VT323'", fontSize: '18px' }}>▶</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <HomeGameList games={games} allCategories={allCategories} />
       )}
     </div>
   );

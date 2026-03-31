@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { title, coverUrl } = await request.json();
+    const { title, coverUrl, categories } = await request.json();
 
     if (!title || typeof title !== 'string') {
       return NextResponse.json({ success: false, error: 'Título inválido.' }, { status: 400 });
@@ -32,12 +32,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Este jogo já foi adicionado.' }, { status: 409 });
     }
 
-    const newGame: Game = { title, slug, coverUrl: coverUrl || undefined };
+    const newGame: Game = { title, slug, coverUrl: coverUrl || undefined, categories };
 
     // 3. Salva o novo jogo no banco de dados
     await kv.set(`game:${slug}`, newGame);
     // Adiciona a um set para listarmos todos os jogos facilmente
-    await kv.sadd('games:all', slug); 
+    await kv.sadd('games:all', slug);
+    if (categories && Array.isArray(categories)) {
+      for (const cat of categories) {
+        await kv.sadd('categories:all', cat);
+      }
+    }
 
     return NextResponse.json({ success: true, game: newGame });
 

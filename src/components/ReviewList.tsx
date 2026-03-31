@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Clock, Star, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import LikeButton from './LikeButton';
 
 const SCORE_LABELS: Record<string, string> = {
   jogabilidade: 'Jogabilidade', arte: 'Arte', trilhaSonora: 'Trilha',
@@ -96,9 +97,16 @@ function ReviewCard({ review, currentUserId, onDelete }: {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '10px 16px', background: '#0d0d22',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6060a0' }}>
-          <Clock size={14} />
-          <span style={{ fontFamily: "'VT323'", fontSize: '18px' }}>{review.horasJogadas}h</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6060a0' }}>
+            <Clock size={14} />
+            <span style={{ fontFamily: "'VT323'", fontSize: '18px' }}>{review.horasJogadas}h</span>
+          </div>
+          <LikeButton 
+            reviewId={review.id} 
+            initialLikes={review.likesCount ?? 0} 
+            initialUserLiked={review.userLiked ?? false} 
+          />
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px',

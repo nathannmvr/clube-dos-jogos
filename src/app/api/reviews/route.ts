@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     await kv.lpush(`reviews_for_game:${gameSlug}`, newReview.id);
     await kv.sadd('games:reviewed', gameSlug);
     await kv.sadd(`user:${userId}:reviews`, newReview.id);
+    await kv.sadd('reviews:all', newReview.id);
     // --- NOVO ÍNDICE PARA A VERIFICAÇÃO DE DUPLICIDADE ---
     await kv.set(reviewExistsKey, newReview.id);
     // ----------------------------------------------------

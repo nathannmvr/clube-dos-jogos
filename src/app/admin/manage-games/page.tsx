@@ -27,11 +27,15 @@ export default async function ManageGamesPage() {
   const games = await getAllGames();
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Gerir Jogos</h1>
-        <Link href="/admin/add-game" className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-md">
-          + Adicionar Jogo
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <h2 className="pixel-font" style={{ fontSize: '10px', color: '#00f5ff' }}>
+          ▼ GERENCIAR ACERVO DE JOGOS
+        </h2>
+        <Link href="/admin/add-game" style={{ textDecoration: 'none' }}>
+          <span className="btn-pixel btn-pixel-green" style={{ fontSize: '8px', padding: '10px 16px' }}>
+            + ADICIONAR JOGO
+          </span>
         </Link>
       </div>
       <ManageGamesList initialGames={games} />

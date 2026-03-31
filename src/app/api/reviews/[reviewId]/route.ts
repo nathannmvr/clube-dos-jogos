@@ -24,7 +24,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     const review = await kv.get<GameReview>(`review:${reviewId}`);
 
-    if (!review || review.userId !== session.user.id) {
+    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+    const isAdmin = session.user.email ? adminEmails.includes(session.user.email) : false;
+
+    if (!review || (review.userId !== session.user.id && !isAdmin)) {
       return NextResponse.json({ success: false, error: 'Ação não permitida.' }, { status: 403 });
     }
 
@@ -35,6 +38,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     await kv.lrem(`reviews_for_game:${gameSlug}`, 1, reviewId);
     await kv.srem(`user:${userId}:reviews`, reviewId);
     await kv.del(`user:${userId}:game:${gameSlug}`);
+    await kv.srem('reviews:all', reviewId);
 
     const remainingReviews = await kv.llen(`reviews_for_game:${gameSlug}`);
     if (remainingReviews === 0) {

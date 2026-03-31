@@ -13,6 +13,7 @@ export default function AddGameForm() {
   const [title, setTitle] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [manualCover, setManualCover] = useState('');
+  const [categoriesInput, setCategoriesInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [rawgResults, setRawgResults] = useState<RawgResult[]>([]);
@@ -72,18 +73,19 @@ export default function AddGameForm() {
     setMessage(null);
 
     const finalCover = manualCover.trim() || coverUrl;
+    const categories = categoriesInput.split(',').map(c => c.trim()).filter(Boolean);
 
     const response = await fetch('/api/games', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, coverUrl: finalCover || null }),
+      body: JSON.stringify({ title, coverUrl: finalCover || null, categories }),
     });
 
     const result = await response.json();
 
     if (response.ok) {
       setMessage({ type: 'success', text: `"${result.game.title}" adicionado!` });
-      setTitle(''); setCoverUrl(''); setManualCover(''); setSelectedGame(null);
+      setTitle(''); setCoverUrl(''); setManualCover(''); setCategoriesInput(''); setSelectedGame(null);
     } else {
       setMessage({ type: 'error', text: result.error || 'Erro ao adicionar.' });
     }
@@ -183,6 +185,23 @@ export default function AddGameForm() {
         />
         <p style={{ fontSize: '14px', color: '#6060a0', marginTop: '4px' }}>
           ↑ Deixe vazio para usar a capa buscada acima
+        </p>
+      </div>
+
+      {/* Categories Input */}
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', fontFamily: "'Press Start 2P', monospace", fontSize: '9px', color: '#6060a0', marginBottom: '8px', letterSpacing: '1px' }}>
+          TAGS / CATEGORIAS
+        </label>
+        <input
+          type="text"
+          value={categoriesInput}
+          onChange={e => setCategoriesInput(e.target.value)}
+          placeholder="Ex: RPG, Ação, Aventura"
+          className="retro-input"
+        />
+        <p style={{ fontSize: '14px', color: '#6060a0', marginTop: '4px' }}>
+          ↑ Separe por vírgulas. Deixe vazio se não souber.
         </p>
       </div>
 

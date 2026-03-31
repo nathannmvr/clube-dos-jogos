@@ -6,6 +6,7 @@ import { GameReview } from '@/lib/types';
 import Link from 'next/link';
 import { Clock, Star, Edit, Trash2, Gamepad2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import LikeButton from './LikeButton';
 
 // O card de review específico para a página de perfil
 function UserReviewCard({ review, onDelete }: { review: GameReview, onDelete: (reviewId: string) => void }) {
@@ -28,14 +29,21 @@ function UserReviewCard({ review, onDelete }: { review: GameReview, onDelete: (r
           </button>
         </div>
       </div>
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2" title="Horas Jogadas">
-          <Clock className="w-5 h-5 text-slate-400" />
-          <span className="font-semibold">{review.horasJogadas}h</span>
-        </div>
-        <div className="flex items-center gap-2 bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full" title="Sua Nota Final">
-          <Star className="w-5 h-5" />
-          <span className="font-bold text-lg">{review.notaFinal}/10</span>
+      <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-700/50">
+        <LikeButton 
+          reviewId={review.id} 
+          initialLikes={review.likesCount ?? 0} 
+          initialUserLiked={review.userLiked ?? false} 
+        />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2" title="Horas Jogadas">
+            <Clock className="w-5 h-5 text-slate-400" />
+            <span className="font-semibold">{review.horasJogadas}h</span>
+          </div>
+          <div className="flex items-center gap-2 bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full" title="Sua Nota Final">
+            <Star className="w-5 h-5" />
+            <span className="font-bold text-lg">{review.notaFinal}/10</span>
+          </div>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ export interface Game {
   slug: string;
   title: string;
   coverUrl?: string;
+  categories?: string[];
 }
 
 export interface GameReview {
@@ -30,4 +31,6 @@ export interface GameReview {
 
   horasJogadas: number;
   notaFinal: number;
+  likesCount?: number;
+  userLiked?: boolean;
 }
