@@ -82,48 +82,52 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
   return (
     <div>
       {/* ============================================================
-          HERO CARD — Metacritic Style
+          HERO CARD — Metacritic Style (Background Image Layout)
           ============================================================ */}
       <div className="pixel-card" style={{
-        display: 'flex', flexDirection: 'column', gap: '0',
+        position: 'relative',
+        display: 'flex', flexDirection: 'column',
         marginBottom: '48px', overflow: 'hidden',
+        minHeight: '400px',
       }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0' }}>
-          {/* Left: Cover Art */}
-          <div style={{
-            width: '260px', minHeight: '340px', flexShrink: 0,
-            position: 'relative', background: '#0d0d28',
-          }}>
-            {game.coverUrl ? (
-              <Image
-                src={game.coverUrl}
-                alt={game.title}
-                fill
-                style={{ objectFit: 'cover' }}
-                priority
-              />
-            ) : (
-              <div style={{
-                width: '100%', height: '340px',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(135deg, #0d0d28, #1a0a2e)',
-              }}>
-                <span style={{ fontSize: '64px' }}>🎮</span>
-                <span style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#2a2a5a', marginTop: '12px' }}>SEM CAPA</span>
-              </div>
-            )}
-            {/* Gradient overlay on cover */}
+        {/* Background Layer */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0,
+          background: '#0d0d28'
+        }}>
+          {game.coverUrl ? (
+            <Image
+              src={game.coverUrl}
+              alt={game.title}
+              fill
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
+              priority
+            />
+          ) : (
             <div style={{
-              position: 'absolute', right: 0, top: 0, bottom: 0, width: '40px',
-              background: 'linear-gradient(90deg, transparent, #12122a)',
-            }} />
-          </div>
+              width: '100%', height: '100%',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(135deg, #0d0d28, #1a0a2e)',
+            }}>
+              <span style={{ fontSize: '64px' }}>🎮</span>
+              <span style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#2a2a5a', marginTop: '12px' }}>SEM CAPA</span>
+            </div>
+          )}
+          {/* Semi-transparent Overlay to make text legible */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(18, 18, 42, 0.85)',
+            backdropFilter: 'blur(4px)',
+          }} />
+        </div>
 
-          {/* Right: Info Panel */}
-          <div style={{ flex: 1, minWidth: '280px', padding: '32px', background: '#12122a' }}>
+        {/* Content Wrapper */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
+          {/* Info Panel */}
+          <div style={{ padding: '32px', flex: 1 }}>
             {/* Title */}
-            <h1 className="pixel-font" style={{ fontSize: '12px', color: '#00f5ff', marginBottom: '24px', lineHeight: '2' }}>
+            <h1 className="pixel-font" style={{ fontSize: '12px', color: '#00f5ff', marginBottom: '24px', lineHeight: '2', textShadow: '2px 2px 0px #000' }}>
               {game.title}
             </h1>
 
@@ -134,22 +138,23 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
                   width: '72px', height: '72px',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   fontFamily: "'Press Start 2P'", flexShrink: 0,
+                  boxShadow: '4px 4px 0px rgba(0,0,0,0.5)',
                 }}>
                   <span style={{ fontSize: '20px', lineHeight: 1 }}>{averageScore}</span>
                   <span style={{ fontSize: '7px', marginTop: '4px', opacity: 0.7 }}>/10</span>
                 </div>
                 <div>
-                  <p style={{ fontFamily: "'VT323'", fontSize: '22px', color: '#a0a0d0' }}>
+                  <p style={{ fontFamily: "'VT323'", fontSize: '22px', color: '#a0a0d0', textShadow: '1px 1px 0px #000' }}>
                     NOTA MÉDIA
                   </p>
-                  <p style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#6060a0' }}>
+                  <p style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#e0e0ff', textShadow: '1px 1px 0px #000' }}>
                     baseada em <span style={{ color: '#ffd700' }}>{reviews.length}</span> review{reviews.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
             ) : (
               <div style={{ marginBottom: '24px' }}>
-                <p style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#6060a0' }}>
+                <p style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#a0a0d0', textShadow: '1px 1px 0px #000' }}>
                   SEM REVIEWS AINDA
                 </p>
               </div>
@@ -167,21 +172,21 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
             {/* Recent reviewers carousel */}
             {reviews.length > 0 && (
               <div style={{
-                borderTop: '1px solid #2a2a5a', paddingTop: '16px',
-                fontFamily: "'VT323'", fontSize: '16px', color: '#6060a0',
+                borderTop: '1px solid rgba(42, 42, 90, 0.5)', paddingTop: '16px',
+                fontFamily: "'VT323'", fontSize: '16px', color: '#e0e0e0',
               }}>
-                <p style={{ marginBottom: '8px', color: '#a0a0d0' }}>AVALIADO POR:</p>
+                <p style={{ marginBottom: '8px', color: '#a0a0d0', textShadow: '1px 1px 0px #000' }}>AVALIADO POR:</p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {reviews.slice(0, 5).map(r => (
                     <div key={r.id} title={r.userName} style={{
-                      padding: '4px 10px', background: '#1a1a3a',
+                      padding: '4px 10px', background: 'rgba(26, 26, 58, 0.8)',
                       border: '1px solid #2a2a5a', color: '#00f5ff', fontSize: '16px',
                     }}>
                       {r.userName.split(' ')[0]}
                     </div>
                   ))}
                   {reviews.length > 5 && (
-                    <div style={{ padding: '4px 10px', background: '#1a1a3a', border: '1px solid #2a2a5a', color: '#6060a0' }}>
+                    <div style={{ padding: '4px 10px', background: 'rgba(26, 26, 58, 0.8)', border: '1px solid #2a2a5a', color: '#a0a0d0' }}>
                       +{reviews.length - 5}
                     </div>
                   )}
@@ -189,35 +194,36 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
               </div>
             )}
           </div>
-        </div>
 
-        {/* Action bar */}
-        {session?.user && (
-          <div style={{
-            padding: '16px 32px', background: '#0d0d1a',
-            borderTop: '2px solid #2a2a5a',
-            display: 'flex', gap: '16px', alignItems: 'center',
-          }}>
-            {!userReview ? (
-              <Link href={`/game/${gameSlug}/submit-review`}>
-                <button className="btn-pixel btn-pixel-cyan" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9px' }}>
-                  <PlusCircle size={14} /> ADICIONAR REVIEW
-                </button>
-              </Link>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <span style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#39ff14' }}>
-                  ★ Sua review: <strong>{userReview.notaFinal}/10</strong>
-                </span>
-                <Link href={`/review/${userReview.id}/edit`}>
-                  <button className="btn-pixel btn-pixel-yellow" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '8px' }}>
-                    <Edit size={12} /> EDITAR
+          {/* Action bar */}
+          {session?.user && (
+            <div style={{
+              padding: '16px 32px', background: 'rgba(13, 13, 26, 0.6)',
+              borderTop: '2px solid rgba(42, 42, 90, 0.5)',
+              display: 'flex', gap: '16px', alignItems: 'center',
+              backdropFilter: 'blur(8px)',
+            }}>
+              {!userReview ? (
+                <Link href={`/game/${gameSlug}/submit-review`}>
+                  <button className="btn-pixel btn-pixel-cyan" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '9px' }}>
+                    <PlusCircle size={14} /> ADICIONAR REVIEW
                   </button>
                 </Link>
-              </div>
-            )}
-          </div>
-        )}
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <span style={{ fontFamily: "'VT323'", fontSize: '18px', color: '#39ff14', textShadow: '1px 1px 0px #000' }}>
+                    ★ Sua review: <strong>{userReview.notaFinal}/10</strong>
+                  </span>
+                  <Link href={`/review/${userReview.id}/edit`}>
+                    <button className="btn-pixel btn-pixel-yellow" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '8px' }}>
+                      <Edit size={12} /> EDITAR
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ============================================================
