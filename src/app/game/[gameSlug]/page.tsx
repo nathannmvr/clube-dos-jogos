@@ -59,7 +59,7 @@ export default async function GamePage({ params }: { params: Promise<{ gameSlug:
 
   // Compute aggregate scores
   let averageScore: string | null = null;
-  let avgScores: Record<string, number> = {};
+  const avgScores: Record<string, number> = {};
   if (reviews.length > 0) {
     const total = reviews.reduce((s, r) => s + r.notaFinal, 0);
     averageScore = (total / reviews.length).toFixed(1);
